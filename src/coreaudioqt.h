@@ -165,7 +165,7 @@ class CoreAudioQt : public QObject
 {
     Q_OBJECT
 public:
-    CoreAudioQt(AudioObjectID deviceID, QObject *parent = nullptr);
+    CoreAudioQt(AudioObjectID deviceID, double sampleRate,  QObject *parent = nullptr);
     virtual ~CoreAudioQt();
     void Start();
     void Stop();
@@ -176,6 +176,7 @@ signals:
 
 private:
     const AudioObjectID deviceID_;
+    const Float64 sampleRate_;
     AudioDeviceIOProcID procID_{nullptr};
 };
 

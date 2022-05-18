@@ -214,9 +214,10 @@ void printStreamConfig(const AudioStreamBasicDescription& desc)
 
 }   // anonymous namespace
 
-CoreAudioQt::CoreAudioQt(AudioObjectID deviceID, QObject *parent)
+CoreAudioQt::CoreAudioQt(AudioObjectID deviceID, double sampleRate, QObject *parent)
     : QObject(parent)
     , deviceID_{deviceID}
+    , sampleRate_{sampleRate}
 {
 }
 
@@ -233,8 +234,20 @@ void CoreAudioQt::Start()
         return;
     }
 
+    AudioObjectPropertyAddress addr{kAudioClockDevicePropertyNominalSampleRate, kAudioObjectPropertyScopeGlobal, kAudioObjectPropertyElementMain};
+    setCAProperty(deviceID_, addr, sampleRate_);
+
+    Float64 sampleRate = 0;
+    getCAProperty(deviceID_, addr, sampleRate);
+    if (std::abs(sampleRate - sampleRate_) > 1e-3)
+    {
+        qDebug() << "Sample rate: " << sampleRate;
+        emit error("Cannot set the sample rate");
+        return;
+    }
+
 #if 1
-    AudioObjectPropertyAddress addr{kAudioDevicePropertyBufferFrameSize, kAudioObjectPropertyScopeGlobal, kAudioObjectPropertyElementMain};
+    addr.mSelector = kAudioDevicePropertyBufferFrameSize;
     UInt32 bufSize = 32;
     setCAProperty(deviceID_, addr, bufSize);
 

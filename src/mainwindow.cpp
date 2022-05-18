@@ -1,6 +1,8 @@
 #include "mainwindow.h"
 #include "coreaudioqt.h"
 
+#include <nlohmann/json.hpp>
+
 #include <QDebug>
 #include <QMessageBox>
 
@@ -8,6 +10,7 @@
 #include <fstream>
 #include <mutex>
 #include <array>
+#include <filesystem>
 
 #include "chirp.inc"
 
@@ -15,18 +18,26 @@
 class LatencyTester : public CoreAudioQt
 {
 public:
-    LatencyTester(const DeviceInfo& deviceInfo, QObject *parent, const std::string& filename)
-        : CoreAudioQt(deviceInfo.id, parent)
-        , file_(filename, std::ios::binary)
-        , sampleRate_(deviceInfo.sampleRate)
+    LatencyTester(AudioObjectID deviceId, double sampleRate, QObject *parent, const std::string& resultPath)
+        : CoreAudioQt(deviceId, sampleRate, parent)
+        , sampleRate_(sampleRate)
     {
+        auto recordingFilename = std::filesystem::absolute(resultPath) / "recording.bin";
+        file_.open(recordingFilename, std::ios::binary);
         if (!file_.is_open())
         {
             emit error("Cannot open recording file");
         }
 
+        nlohmann::json json;
+        json["sample_rate"] = sampleRate_;
+        json["period"] = chirp_signal.size();
+        std::ofstream jsonFile(std::filesystem::absolute(resultPath) / "config.json");
+        jsonFile << json;
+
         qDebug() << "###############################################################";
-        qDebug() << "Selected device: " << deviceInfo.name;
+        qDebug() << "Write recording to " << QString::fromStdString(recordingFilename);
+        qDebug() << "Selected device ID: " << deviceId;
         qDebug() << "Selected device sample rate: " << sampleRate_;
     }
 
@@ -125,7 +136,7 @@ MainWindow::MainWindow(QWidget *parent)
         }
 
         // Create tester
-        tester = new LatencyTester(*selectedDevice, this, "/Users/cvnguyen/recording.bin");
+        tester = new LatencyTester(selectedDevice->id, 48e3, this, "../../../../TestCoreAudioLatency/python");
         connect(tester, &CoreAudioQt::error, this, &MainWindow::error);
 
         // Done

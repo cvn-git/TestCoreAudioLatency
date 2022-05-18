@@ -11,6 +11,8 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+add_subdirectory(ext/nlohmann_json)
+
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
 
@@ -55,6 +57,7 @@ target_include_directories(TestCoreAudioLatency
 target_link_libraries(TestCoreAudioLatency
     PRIVATE Qt${QT_VERSION_MAJOR}::Widgets
     PRIVATE "-framework CoreAudio"
+    PRIVATE nlohmann_json
 )
 
 set_target_properties(TestCoreAudioLatency PROPERTIES
